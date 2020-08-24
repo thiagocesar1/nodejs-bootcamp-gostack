@@ -1,4 +1,5 @@
 import Transaction from '../models/Transaction';
+import transactionRouter from '../routes/transaction.routes';
 
 interface Balance {
   income: number;
@@ -24,21 +25,31 @@ class TransactionsRepository {
   }
 
   public getBalance(): Balance {
-    const income = this.transactions.reduce((total, transaction) => {
-      const val =
-        transaction.type === 'income' ? total + transaction.value : total;
-      return val;
-    }, 0);
+    const balance = this.transactions.reduce(
+      (accumulator: Balance, transaction: Transaction) => {
+        switch (transaction.type) {
+          case 'income':
+            accumulator.income += transaction.value;
+            accumulator.total += transaction.value;
+            break;
+          case 'outcome':
+            accumulator.outcome += transaction.value;
+            accumulator.total -= transaction.value;
+            break;
+          default:
+            break;
+        }
 
-    const outcome = this.transactions.reduce((total, transaction) => {
-      const val =
-        transaction.type === 'outcome' ? total + transaction.value : total;
-      return val;
-    }, 0);
+        return accumulator;
+      },
+      {
+        income: 0,
+        outcome: 0,
+        total: 0,
+      },
+    );
 
-    const total = income - outcome;
-
-    return { income, outcome, total };
+    return balance;
   }
 
   public create({ title, value, type }: CreateTransactionDTO): Transaction {
